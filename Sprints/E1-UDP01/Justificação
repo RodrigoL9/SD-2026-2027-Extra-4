@@ -1,0 +1,5 @@
+Mensagem enviada	Resposta recebida	L após processamento	Justificação
+1, olá                1, olá (echo)          1                    N=L+1 (Neste caso L=0)
+3, mundo              waiting for, 2         1                    N=L+1 ( Como o L=1, então N=2 diferente do numero 3 introduzido)
+2, cruel              2. cruel (echo)        2                    N=L+1 (Neste caso L=1)
+3, mundo              3, mundo (echo)        3                    N=L+1 (Neste caso L=2)
