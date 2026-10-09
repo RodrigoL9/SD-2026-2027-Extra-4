@@ -1,0 +1,62 @@
+======================================================================
+PARTE 1: FALHAS INTRODUZIDAS E RESULTADOS
+======================================================================
+
+FALHA 1: Arrancar o cliente sem o servidor
+- Lado onde surgiu: Cliente
+- Exceção obtida: java.net.ConnectException (Connection refused)
+- Momento: Ligação (ao instanciar new Socket(...))
+- Conclusão: O sistema operativo recusa ativamente a ligação porque não existe nenhum processo à escuta naquele porto.
+
+FALHA 2: Retirar 'implements Serializable' do Place
+- Lado onde surgiu: Cliente
+- Exceção obtida: java.io.NotSerializableException
+- Momento: Escrita (no writeObject())
+- Conclusão: A serialização de um objeto dependente falha imediatamente na origem, antes do envio, se toda a árvore de dependências não for serializável.
+
+FALHA 3: serialVersionUID da Person diferente nos dois lados
+- Lado onde surgiu: Servidor
+- Exceção obtida: java.io.InvalidClassException
+- Momento: Leitura (no readObject())
+- Conclusão: O objeto viaja pela rede, mas é rejeitado no destino porque o Java utiliza este identificador para garantir a compatibilidade estrita das versões da classe.
+
+FALHA 4: Person num pacote diferente no servidor
+- Lado onde surgiu: Servidor
+- Exceção obtida: java.lang.ClassNotFoundException
+- Momento: Leitura (no readObject())
+- Conclusão: O nome do pacote faz parte da "identidade" da classe no Java. Classes iguais em pacotes diferentes são consideradas classes distintas, impedindo a reconstrução.
+
+
+======================================================================
+PARTE 2: CONSTRUÇÕES E GARANTIAS
+======================================================================
+
+CONSTRUÇÃO 1: ServerSocket / accept()
+- Onde a usou: No TCPServer, dentro do ciclo infinito.
+- O que ficou garantido: O servidor fica bloqueado e só avança a execução quando um cliente estabelece ligação com sucesso.
+- O que não ficou garantido: Não garante que o cliente envie dados; o cliente pode ligar-se e a ligação ficar inativa, bloqueando operações de leitura futuras.
+
+CONSTRUÇÃO 2: Connection extends Thread
+- Onde a usou: No TCPServer, para processar o pedido de cada clientSocket.
+- O que ficou garantido: A thread principal regressa imediatamente ao accept(), permitindo atender múltiplos clientes em paralelo.
+- O que não ficou garantido: Não garante proteção contra exaustão de recursos (se ligarem milhares de clientes em simultâneo, o servidor pode esgotar a memória).
+
+CONSTRUÇÃO 3: implements Serializable
+- Onde a usou: Nas classes Person e Place.
+- O que ficou garantido: Autoriza o Java a converter automaticamente o estado interno (atributos) desses objetos numa sequência de bytes.
+- O que não ficou garantido: Não garante que o outro lado consiga reconstruir o objeto (depende de a classe existir lá com o mesmo pacote e versão).
+
+CONSTRUÇÃO 4: ObjectOutputStream / ObjectInputStream
+- Onde a usou: No TCPClient (saída) e na Connection do servidor (entrada).
+- O que ficou garantido: A transmissão e reconstrução da estrutura complexa de um objeto Java através da rede.
+- O que não ficou garantido: O tipo final recebido; o readObject() devolve apenas um Object genérico, forçando um cast manual sujeito a erros (ClassNotFoundException).
+
+CONSTRUÇÃO 5: serialVersionUID
+- Onde a usou: Nas classes Person e Place.
+- O que ficou garantido: O controlo manual e explícito da versão da classe, evitando falsos positivos de incompatibilidade ao compilar.
+- O que não ficou garantido: Não garante que a lógica interna do objeto (ex: limites de valores dos atributos) esteja correta para o programa recetor.
+
+CONSTRUÇÃO 6: Referência para Place
+- Onde a usou: Como atributo de instância na classe Person.
+- O que ficou garantido: A serialização arrasta e inclui o Place automaticamente no pacote de bytes ao enviar a Person.
+- O que não ficou garantido: O envio falha totalmente se o próprio Place não implementar a interface Serializable.
