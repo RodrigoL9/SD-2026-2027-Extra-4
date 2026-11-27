@@ -1,0 +1,15 @@
+﻿token.txt
+guild.txt
+master.key
+*.key
+*.der
+registos.log
+catalogo.txt
+desafios.txt
+replicas.txt
+eventos-*.txt
+selados/
+dados-*/
+target/
+.idea/
+*.iml
